@@ -3,6 +3,6 @@
 
 echo "Installing dependencies..."
 cd backend
-npm ci --only=production
+npm install --omit=dev
 
 echo "Build complete!"
