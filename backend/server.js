@@ -1,0 +1,63 @@
+const express = require('express');
+const cors = require('cors');
+const path = require('path');
+const db = require('./db');
+
+const authRoutes = require('./routes/auth');
+const playersRoutes = require('./routes/players');
+const tournamentsRoutes = require('./routes/tournaments');
+const rankingsRoutes = require('./routes/rankings');
+const calendarRoutes = require('./routes/calendar');
+const clubsRoutes = require('./routes/clubs');
+
+const app = express();
+const PORT = 3000;
+
+// Middleware
+app.use(cors());
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// Serve static frontend files
+app.use(express.static(path.join(__dirname, '../frontend')));
+
+// API Routes
+app.use('/api/auth', authRoutes);
+app.use('/api/players', playersRoutes);
+app.use('/api/tournaments', tournamentsRoutes);
+app.use('/api/rankings', rankingsRoutes);
+app.use('/api/calendar', calendarRoutes);
+app.use('/api/clubs', clubsRoutes);
+
+// Serve frontend pages
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, '../frontend/login.html'));
+});
+
+// Start server
+app.listen(PORT, '0.0.0.0', () => {
+  const os = require('os');
+  const networkInterfaces = os.networkInterfaces();
+  let localIP = 'localhost';
+
+  // Find the local network IP
+  for (const interfaceName in networkInterfaces) {
+    for (const iface of networkInterfaces[interfaceName]) {
+      if (iface.family === 'IPv4' && !iface.internal) {
+        localIP = iface.address;
+        break;
+      }
+    }
+  }
+
+  console.log(`
+╔════════════════════════════════════════════╗
+║  French Billiard Ranking System           ║
+║  Server running on:                       ║
+║  - Local: http://localhost:${PORT}            ║
+║  - Network: http://${localIP}:${PORT}${' '.repeat(Math.max(0, 10 - localIP.length))} ║
+╚════════════════════════════════════════════╝
+  `);
+});
+
+module.exports = app;
