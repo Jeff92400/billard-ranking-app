@@ -3,9 +3,6 @@
 
 echo "Installing dependencies..."
 cd backend
-npm install
-
-echo "Creating database directory..."
-mkdir -p ../database
+npm ci --only=production
 
 echo "Build complete!"

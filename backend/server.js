@@ -1,6 +1,14 @@
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
+const fs = require('fs');
+
+// Ensure database directory exists
+const dbDir = path.join(__dirname, '../database');
+if (!fs.existsSync(dbDir)) {
+  fs.mkdirSync(dbDir, { recursive: true });
+}
+
 const db = require('./db');
 
 const authRoutes = require('./routes/auth');
