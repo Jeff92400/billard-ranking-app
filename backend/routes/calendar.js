@@ -35,8 +35,8 @@ function authenticateTokenFlexible(req, res, next) {
 router.get('/view', authenticateTokenFlexible, (req, res) => {
   try {
     // Try PDF first, then fall back to Excel
-    const pdfPath = path.join(__dirname, '../../Calendrier CDBHS 2025-2026 V5.pdf');
-    const excelPath = path.join(__dirname, '../../Calendrier CDBHS 2025-2026 V5.xlsx');
+    const pdfPath = path.join(__dirname, '../Calendrier CDBHS 2025-2026 V5.pdf');
+    const excelPath = path.join(__dirname, '../Calendrier CDBHS 2025-2026 V5.xlsx');
 
     let filePath, contentType, fileName;
 
@@ -67,8 +67,8 @@ router.get('/view', authenticateTokenFlexible, (req, res) => {
 // Download calendar file
 router.get('/download', authenticateToken, (req, res) => {
   try {
-    const pdfPath = path.join(__dirname, '../../Calendrier CDBHS 2025-2026 V5.pdf');
-    const excelPath = path.join(__dirname, '../../Calendrier CDBHS 2025-2026 V5.xlsx');
+    const pdfPath = path.join(__dirname, '../Calendrier CDBHS 2025-2026 V5.pdf');
+    const excelPath = path.join(__dirname, '../Calendrier CDBHS 2025-2026 V5.xlsx');
 
     let filePath, contentType, fileName;
 
