@@ -4,7 +4,7 @@ const jwt = require('jsonwebtoken');
 const db = require('../db');
 
 const router = express.Router();
-const JWT_SECRET = 'your-secret-key-change-this-in-production-' + Math.random().toString(36);
+const JWT_SECRET = process.env.JWT_SECRET || 'billard-ranking-jwt-secret-key-2024-change-in-production';
 
 // Login
 router.post('/login', (req, res) => {
