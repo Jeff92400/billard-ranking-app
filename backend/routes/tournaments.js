@@ -294,7 +294,7 @@ router.get('/', authenticateToken, (req, res) => {
     params.push(season);
   }
 
-  query += ' GROUP BY t.id ORDER BY t.season DESC, c.game_type, c.level, t.tournament_number';
+  query += ' GROUP BY t.id, t.tournament_number, t.season, t.import_date, c.id, c.game_type, c.level, c.display_name ORDER BY t.season DESC, c.game_type, c.level, t.tournament_number';
 
   db.all(query, params, (err, rows) => {
     if (err) {
