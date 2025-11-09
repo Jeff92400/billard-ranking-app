@@ -5,8 +5,9 @@ const { Pool } = require('pg');
 const sqliteDb = new sqlite3.Database('../database/billard.db');
 
 // PostgreSQL target database (Railway)
+// IMPORTANT: Use environment variable instead of hardcoding credentials
 const pgPool = new Pool({
-  connectionString: 'postgresql://postgres:cPIufXnhNwNhKbdMjxkLCefFrgfjLTwZ@ballast.proxy.rlwy.net:31758/railway',
+  connectionString: process.env.DATABASE_URL || 'postgresql://postgres:PASSWORD@host:5432/database',
   ssl: { rejectUnauthorized: false }
 });
 
