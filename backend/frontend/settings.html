@@ -88,9 +88,9 @@
           <li>Variables → Add Variable</li>
           <li>Ajoutez les variables suivantes :
             <ul style="margin-top: 5px;">
-              <li><code>EMAIL_SERVICE</code> = gmail</li>
-              <li><code>EMAIL_USER</code> = votre-email@gmail.com</li>
-              <li><code>EMAIL_PASSWORD</code> = votre-app-password</li>
+              <li><code>EMAIL_SERVICE</code> = outlook</li>
+              <li><code>EMAIL_USER</code> = votre-email@outlook.com</li>
+              <li><code>EMAIL_PASSWORD</code> = votre-mot-de-passe</li>
               <li><code>BACKUP_EMAIL_TO</code> = email-destination@example.com</li>
             </ul>
           </li>
@@ -98,14 +98,19 @@
       </div>
 
       <div style="background: #e7f3ff; padding: 15px; border-left: 4px solid #17a2b8; border-radius: 4px; margin-bottom: 20px;">
-        <strong>ℹ️ Comment créer un App Password Gmail :</strong>
-        <ol style="margin: 10px 0 0 20px; color: #666;">
-          <li>Allez dans les paramètres de votre compte Google</li>
-          <li>Sécurité → Validation en deux étapes (activer si nécessaire)</li>
-          <li>Sécurité → Mots de passe des applications</li>
-          <li>Générer un nouveau mot de passe pour "Mail"</li>
-          <li>Utilisez ce mot de passe dans EMAIL_PASSWORD</li>
-        </ol>
+        <strong>ℹ️ Configuration Outlook :</strong>
+        <ul style="margin: 10px 0 0 20px; color: #666;">
+          <li><strong>Avec 2FA activée (recommandé) :</strong>
+            <ol style="margin-top: 5px;">
+              <li>Allez sur <a href="https://account.microsoft.com/security" target="_blank">account.microsoft.com/security</a></li>
+              <li>Options de sécurité avancées → Mots de passe d'application</li>
+              <li>Créer un nouveau mot de passe pour "Email"</li>
+              <li>Utilisez ce mot de passe dans EMAIL_PASSWORD</li>
+            </ol>
+          </li>
+          <li style="margin-top: 10px;"><strong>Sans 2FA :</strong> Utilisez votre mot de passe Outlook habituel</li>
+          <li style="margin-top: 10px;">Fonctionne aussi avec Hotmail (@hotmail.com)</li>
+        </ul>
       </div>
 
       <button onclick="testEmailBackup()" class="btn" style="background: #17a2b8;">
