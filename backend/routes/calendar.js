@@ -38,6 +38,21 @@ router.get('/view', authenticateTokenFlexible, (req, res) => {
     const pdfPath = path.join(__dirname, '../Calendrier CDBHS 2025-2026 V5.pdf');
     const excelPath = path.join(__dirname, '../Calendrier CDBHS 2025-2026 V5.xlsx');
 
+    console.log('Calendar view request - checking paths:');
+    console.log('  PDF path:', pdfPath);
+    console.log('  PDF exists:', fs.existsSync(pdfPath));
+    console.log('  Excel path:', excelPath);
+    console.log('  Excel exists:', fs.existsSync(excelPath));
+    console.log('  __dirname:', __dirname);
+
+    // List files in backend directory for debugging
+    try {
+      const backendFiles = fs.readdirSync(path.join(__dirname, '..'));
+      console.log('  Files in backend directory:', backendFiles.filter(f => f.includes('Calendrier')));
+    } catch (e) {
+      console.log('  Error listing backend directory:', e.message);
+    }
+
     let filePath, contentType, fileName;
 
     if (fs.existsSync(pdfPath)) {
@@ -49,6 +64,7 @@ router.get('/view', authenticateTokenFlexible, (req, res) => {
       contentType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
       fileName = 'Calendrier_CDBHS_2025-2026.xlsx';
     } else {
+      console.log('  Calendar file not found!');
       return res.status(404).json({ error: 'Calendar file not found' });
     }
 
