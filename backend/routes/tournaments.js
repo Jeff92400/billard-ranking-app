@@ -86,13 +86,12 @@ router.post('/import', authenticateToken, upload.single('file'), async (req, res
     db.serialize(() => {
       // Create or get tournament
       db.run(
-        `INSERT INTO tournaments (category_id, tournament_number, season, tournament_date)
-         VALUES (?, ?, ?, ?)
+        `INSERT INTO tournaments (category_id, tournament_number, season)
+         VALUES (?, ?, ?)
          ON CONFLICT(category_id, tournament_number, season) DO UPDATE SET
-           import_date = CURRENT_TIMESTAMP,
-           tournament_date = excluded.tournament_date
+           import_date = CURRENT_TIMESTAMP
          RETURNING id`,
-        [categoryId, tournamentNumber, season, tournamentDate || null],
+        [categoryId, tournamentNumber, season],
         function(err) {
           if (err) {
             fs.unlinkSync(req.file.path);
