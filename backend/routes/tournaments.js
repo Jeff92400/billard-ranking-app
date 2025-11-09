@@ -209,7 +209,7 @@ function recalculateRankings(categoryId, season, callback) {
       tr.player_name,
       t.tournament_number,
       SUM(tr.match_points) as total_match_points,
-      CAST(SUM(tr.points) AS FLOAT) / NULLIF(SUM(tr.reprises), 0) as avg_moyenne,
+      AVG(tr.moyenne) as avg_moyenne,
       MAX(tr.serie) as best_serie,
       MAX(CASE WHEN t.tournament_number = 1 THEN tr.match_points ELSE 0 END) as t1_points,
       MAX(CASE WHEN t.tournament_number = 2 THEN tr.match_points ELSE 0 END) as t2_points,
