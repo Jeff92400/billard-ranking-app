@@ -262,6 +262,7 @@ function recalculateRankings(categoryId, season, callback) {
 
 // Get all tournaments
 router.get('/', authenticateToken, (req, res) => {
+  console.log('GET /api/tournaments called, season:', req.query.season);
   const { season } = req.query;
 
   let query = `
@@ -290,8 +291,10 @@ router.get('/', authenticateToken, (req, res) => {
 
   db.all(query, params, (err, rows) => {
     if (err) {
+      console.error('Error fetching tournaments:', err);
       return res.status(500).json({ error: err.message });
     }
+    console.log('Tournaments fetched successfully:', rows.length, 'tournaments');
     res.json(rows);
   });
 });
