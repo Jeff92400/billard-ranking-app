@@ -387,4 +387,19 @@ router.get('/export-all', authenticateToken, async (req, res) => {
   }
 });
 
+// Test email backup (manual trigger)
+router.post('/test-email', authenticateToken, async (req, res) => {
+  try {
+    const scheduledBackup = require('../scheduled-backup');
+    await scheduledBackup.triggerManualBackup();
+    res.json({
+      success: true,
+      message: 'Backup email sent successfully. Check your inbox!'
+    });
+  } catch (error) {
+    console.error('Error sending test backup email:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 module.exports = router;

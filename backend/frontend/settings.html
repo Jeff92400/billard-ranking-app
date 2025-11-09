@@ -76,6 +76,52 @@
         </ul>
       </div>
     </div>
+
+    <div class="card">
+      <h3>📧 Sauvegardes Automatiques par Email</h3>
+      <p style="margin-bottom: 20px; color: #666;">Recevez automatiquement une sauvegarde complète par email tous les dimanches à minuit.</p>
+
+      <div style="background: #fff3cd; padding: 15px; border-left: 4px solid #ffc107; border-radius: 4px; margin-bottom: 20px;">
+        <strong>⚙️ Configuration requise (Railway):</strong>
+        <ol style="margin: 10px 0 0 20px; color: #666;">
+          <li>Allez dans le dashboard Railway → Votre projet</li>
+          <li>Variables → Add Variable</li>
+          <li>Ajoutez les variables suivantes :
+            <ul style="margin-top: 5px;">
+              <li><code>EMAIL_SERVICE</code> = gmail</li>
+              <li><code>EMAIL_USER</code> = votre-email@gmail.com</li>
+              <li><code>EMAIL_PASSWORD</code> = votre-app-password</li>
+              <li><code>BACKUP_EMAIL_TO</code> = email-destination@example.com</li>
+            </ul>
+          </li>
+        </ol>
+      </div>
+
+      <div style="background: #e7f3ff; padding: 15px; border-left: 4px solid #17a2b8; border-radius: 4px; margin-bottom: 20px;">
+        <strong>ℹ️ Comment créer un App Password Gmail :</strong>
+        <ol style="margin: 10px 0 0 20px; color: #666;">
+          <li>Allez dans les paramètres de votre compte Google</li>
+          <li>Sécurité → Validation en deux étapes (activer si nécessaire)</li>
+          <li>Sécurité → Mots de passe des applications</li>
+          <li>Générer un nouveau mot de passe pour "Mail"</li>
+          <li>Utilisez ce mot de passe dans EMAIL_PASSWORD</li>
+        </ol>
+      </div>
+
+      <button onclick="testEmailBackup()" class="btn" style="background: #17a2b8;">
+        📧 Tester l'Envoi d'Email
+      </button>
+
+      <div style="margin-top: 15px; padding: 15px; background: #d4edda; border-left: 4px solid #28a745; border-radius: 4px;">
+        <strong>✅ Une fois configuré :</strong>
+        <ul style="margin: 10px 0 0 20px; color: #666;">
+          <li>Sauvegardes automatiques tous les dimanches à 00:00 (heure de Paris)</li>
+          <li>Fichier Excel complet envoyé par email</li>
+          <li>Aucune action manuelle requise</li>
+          <li>Vérifiez vos spams la première fois</li>
+        </ul>
+      </div>
+    </div>
   </div>
 
   <script>
@@ -227,6 +273,41 @@
         console.error('Error exporting data:', error);
         document.getElementById('successMessage').style.display = 'none';
         document.getElementById('errorMessage').textContent = error.message;
+        document.getElementById('errorMessage').style.display = 'block';
+      }
+    }
+
+    // Test email backup
+    async function testEmailBackup() {
+      try {
+        // Hide previous messages
+        document.getElementById('errorMessage').style.display = 'none';
+        document.getElementById('successMessage').style.display = 'none';
+
+        // Show loading message
+        document.getElementById('successMessage').textContent = 'Envoi du test email en cours...';
+        document.getElementById('successMessage').style.display = 'block';
+
+        const response = await fetch(`${API_URL}/backup/test-email`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || 'Erreur lors de l\'envoi du test email');
+        }
+
+        // Show success message
+        document.getElementById('successMessage').textContent = '✅ Email de test envoyé ! Vérifiez votre boîte de réception (et les spams).';
+
+      } catch (error) {
+        console.error('Error testing email backup:', error);
+        document.getElementById('successMessage').style.display = 'none';
+        document.getElementById('errorMessage').textContent = error.message || 'Erreur - Vérifiez que les variables d\'environnement email sont configurées sur Railway';
         document.getElementById('errorMessage').style.display = 'block';
       }
     }

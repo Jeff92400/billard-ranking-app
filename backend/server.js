@@ -21,6 +21,7 @@ const rankingsRoutes = require('./routes/rankings');
 const calendarRoutes = require('./routes/calendar');
 const clubsRoutes = require('./routes/clubs');
 const backupRoutes = require('./routes/backup');
+const scheduledBackup = require('./scheduled-backup');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -77,6 +78,9 @@ app.listen(PORT, '0.0.0.0', () => {
 ║  - Network: http://${localIP}:${PORT}${' '.repeat(Math.max(0, 10 - localIP.length))} ║
 ╚════════════════════════════════════════════╝
   `);
+
+  // Start scheduled backups
+  scheduledBackup.startScheduledBackups();
 });
 
 module.exports = app;
