@@ -154,10 +154,10 @@
     // Export data function
     async function exportData(type) {
       const endpoints = {
-        'players': '/api/backup/export-players',
-        'tournaments': '/api/backup/export-tournaments',
-        'rankings': '/api/backup/export-rankings',
-        'all': '/api/backup/export-all'
+        'players': '/backup/export-players',
+        'tournaments': '/backup/export-tournaments',
+        'rankings': '/backup/export-rankings',
+        'all': '/backup/export-all'
       };
 
       const labels = {
@@ -184,8 +184,18 @@
         });
 
         if (!response.ok) {
-          const data = await response.json();
-          throw new Error(data.error || 'Erreur lors de l\'export');
+          // Try to parse JSON error, but handle HTML responses too
+          let errorMessage = 'Erreur lors de l\'export';
+          try {
+            const contentType = response.headers.get('content-type');
+            if (contentType && contentType.includes('application/json')) {
+              const data = await response.json();
+              errorMessage = data.error || errorMessage;
+            }
+          } catch (e) {
+            // Ignore JSON parse errors for HTML responses
+          }
+          throw new Error(errorMessage);
         }
 
         // Get filename from Content-Disposition header
