@@ -19,7 +19,7 @@ const calendarRoutes = require('./routes/calendar');
 const clubsRoutes = require('./routes/clubs');
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 
 // Middleware
 app.use(cors());
@@ -27,7 +27,11 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Serve static frontend files
-app.use(express.static(path.join(__dirname, '../frontend')));
+// Check if frontend folder exists in current directory (Railway) or parent directory (local)
+const frontendPath = fs.existsSync(path.join(__dirname, 'frontend'))
+  ? path.join(__dirname, 'frontend')
+  : path.join(__dirname, '../frontend');
+app.use(express.static(frontendPath));
 
 // API Routes
 app.use('/api/auth', authRoutes);
@@ -39,7 +43,7 @@ app.use('/api/clubs', clubsRoutes);
 
 // Serve frontend pages
 app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, '../frontend/login.html'));
+  res.sendFile(path.join(frontendPath, 'login.html'));
 });
 
 // Start server
