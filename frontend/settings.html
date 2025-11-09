@@ -45,6 +45,36 @@
         <button type="submit" class="btn btn-primary">Changer le mot de passe</button>
       </form>
     </div>
+
+    <div class="card">
+      <h3>💾 Sauvegardes et Exports</h3>
+      <p style="margin-bottom: 20px; color: #666;">Exportez vos données au format Excel pour créer des sauvegardes locales.</p>
+
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px;">
+        <button onclick="exportData('players')" class="btn" style="background: #28a745;">
+          👥 Exporter les Joueurs
+        </button>
+        <button onclick="exportData('tournaments')" class="btn" style="background: #17a2b8;">
+          🏆 Exporter les Tournois
+        </button>
+        <button onclick="exportData('rankings')" class="btn" style="background: #ffc107; color: #000;">
+          📊 Exporter les Classements
+        </button>
+        <button onclick="exportData('all')" class="btn" style="background: #dc3545;">
+          💾 Sauvegarde Complète
+        </button>
+      </div>
+
+      <div style="margin-top: 20px; padding: 15px; background: #e7f3ff; border-left: 4px solid #1F4788; border-radius: 4px;">
+        <strong>ℹ️ Information :</strong>
+        <ul style="margin: 10px 0 0 20px; color: #666;">
+          <li>Les exports incluent toutes les données actuelles de la base de données PostgreSQL</li>
+          <li>Les fichiers sont téléchargés au format Excel (.xlsx)</li>
+          <li>Recommandé : effectuez une sauvegarde complète régulièrement</li>
+          <li>Les sauvegardes Railway automatiques conservent 7 jours d'historique</li>
+        </ul>
+      </div>
+    </div>
   </div>
 
   <script>
@@ -120,6 +150,75 @@
         document.getElementById('errorMessage').style.display = 'block';
       }
     });
+
+    // Export data function
+    async function exportData(type) {
+      const endpoints = {
+        'players': '/api/backup/export-players',
+        'tournaments': '/api/backup/export-tournaments',
+        'rankings': '/api/backup/export-rankings',
+        'all': '/api/backup/export-all'
+      };
+
+      const labels = {
+        'players': 'Joueurs',
+        'tournaments': 'Tournois',
+        'rankings': 'Classements',
+        'all': 'Sauvegarde Complète'
+      };
+
+      try {
+        // Hide previous messages
+        document.getElementById('errorMessage').style.display = 'none';
+        document.getElementById('successMessage').style.display = 'none';
+
+        // Show loading message
+        document.getElementById('successMessage').textContent = `Export ${labels[type]} en cours...`;
+        document.getElementById('successMessage').style.display = 'block';
+
+        const response = await fetch(`${API_URL}${endpoints[type]}`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        if (!response.ok) {
+          const data = await response.json();
+          throw new Error(data.error || 'Erreur lors de l\'export');
+        }
+
+        // Get filename from Content-Disposition header
+        const contentDisposition = response.headers.get('Content-Disposition');
+        let filename = `Export_${type}_${new Date().toISOString().split('T')[0]}.xlsx`;
+        if (contentDisposition) {
+          const matches = /filename="([^"]+)"/.exec(contentDisposition);
+          if (matches && matches[1]) {
+            filename = matches[1];
+          }
+        }
+
+        // Create blob and trigger download
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+
+        // Show success message
+        document.getElementById('successMessage').textContent = `Export ${labels[type]} réussi ! Le fichier a été téléchargé.`;
+
+      } catch (error) {
+        console.error('Error exporting data:', error);
+        document.getElementById('successMessage').style.display = 'none';
+        document.getElementById('errorMessage').textContent = error.message;
+        document.getElementById('errorMessage').style.display = 'block';
+      }
+    }
   </script>
 </body>
 </html>
