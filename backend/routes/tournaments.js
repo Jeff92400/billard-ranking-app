@@ -9,11 +9,19 @@ const { authenticateToken } = require('./auth');
 const router = express.Router();
 
 // Configure multer for file uploads
-const uploadsDir = path.join(__dirname, '../uploads');
-if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir, { recursive: true });
+let upload;
+try {
+  const uploadsDir = path.join(__dirname, '../uploads');
+  if (!fs.existsSync(uploadsDir)) {
+    fs.mkdirSync(uploadsDir, { recursive: true });
+  }
+  upload = multer({ dest: uploadsDir });
+  console.log('Multer configured successfully, uploads dir:', uploadsDir);
+} catch (error) {
+  console.error('Error configuring multer:', error);
+  // Create a dummy upload middleware
+  upload = { single: () => (req, res, next) => next() };
 }
-const upload = multer({ dest: uploadsDir });
 
 // Get all categories
 router.get('/categories', authenticateToken, (req, res) => {
@@ -270,7 +278,7 @@ router.get('/', authenticateToken, (req, res) => {
       t.id,
       t.tournament_number,
       t.season,
-      t.tournament_date,
+      t.import_date as tournament_date,
       c.id as category_id,
       c.game_type,
       c.level,
