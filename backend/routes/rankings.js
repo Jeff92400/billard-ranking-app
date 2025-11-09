@@ -2,7 +2,7 @@ const express = require('express');
 const ExcelJS = require('exceljs');
 const path = require('path');
 const fs = require('fs');
-const db = require('../db');
+const db = require('../db-loader');
 const { authenticateToken } = require('./auth');
 
 const router = express.Router();

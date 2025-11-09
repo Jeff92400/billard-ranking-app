@@ -3,20 +3,16 @@ const cors = require('cors');
 const path = require('path');
 const fs = require('fs');
 
-// Use PostgreSQL if DATABASE_URL is set (Railway), otherwise SQLite (local)
-let db;
-if (process.env.DATABASE_URL) {
-  console.log('Using PostgreSQL database');
-  db = require('./db-postgres');
-} else {
-  console.log('Using SQLite database');
-  // Ensure database directory exists
+// Ensure database directory exists for SQLite (when running locally)
+if (!process.env.DATABASE_URL) {
   const dbDir = path.join(__dirname, '../database');
   if (!fs.existsSync(dbDir)) {
     fs.mkdirSync(dbDir, { recursive: true });
   }
-  db = require('./db');
 }
+
+// Use database loader - automatically selects PostgreSQL or SQLite
+const db = require('./db-loader');
 
 const authRoutes = require('./routes/auth');
 const playersRoutes = require('./routes/players');
