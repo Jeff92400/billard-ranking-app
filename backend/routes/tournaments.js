@@ -9,7 +9,11 @@ const { authenticateToken } = require('./auth');
 const router = express.Router();
 
 // Configure multer for file uploads
-const upload = multer({ dest: '/Users/jeffrallet/Library/CloudStorage/OneDrive-Personal/Billard/Ranking App/Tournament CSV files' });
+const uploadsDir = path.join(__dirname, '../uploads');
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+}
+const upload = multer({ dest: uploadsDir });
 
 // Get all categories
 router.get('/categories', authenticateToken, (req, res) => {
