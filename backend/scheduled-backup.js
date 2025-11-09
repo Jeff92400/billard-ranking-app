@@ -18,7 +18,7 @@ function createTransporter() {
     return null;
   }
 
-  return nodemailer.createTransporter({
+  return nodemailer.createTransport({
     service: EMAIL_CONFIG.service,
     auth: {
       user: EMAIL_CONFIG.user,
