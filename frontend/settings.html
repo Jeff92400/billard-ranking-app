@@ -50,6 +50,11 @@
       <h3>💾 Sauvegardes et Exports</h3>
       <p style="margin-bottom: 20px; color: #666;">Exportez vos données au format Excel pour créer des sauvegardes locales.</p>
 
+      <div id="lastExportInfo" style="display: none; margin-bottom: 20px; padding: 15px; background: #f8f9fa; border-left: 4px solid #28a745; border-radius: 4px;">
+        <strong>📅 Dernier export :</strong>
+        <div id="lastExportDetails" style="margin-top: 8px; color: #666;"></div>
+      </div>
+
       <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px;">
         <button onclick="exportData('players')" class="btn" style="background: #28a745;">
           👥 Exporter les Joueurs
@@ -76,57 +81,6 @@
         </ul>
       </div>
     </div>
-
-    <div class="card">
-      <h3>📧 Sauvegardes Automatiques par Email</h3>
-      <p style="margin-bottom: 20px; color: #666;">Recevez automatiquement une sauvegarde complète par email tous les dimanches à minuit.</p>
-
-      <div style="background: #fff3cd; padding: 15px; border-left: 4px solid #ffc107; border-radius: 4px; margin-bottom: 20px;">
-        <strong>⚙️ Configuration requise (Railway):</strong>
-        <ol style="margin: 10px 0 0 20px; color: #666;">
-          <li>Allez dans le dashboard Railway → Votre projet</li>
-          <li>Variables → Add Variable</li>
-          <li>Ajoutez les variables suivantes :
-            <ul style="margin-top: 5px;">
-              <li><code>EMAIL_SERVICE</code> = outlook</li>
-              <li><code>EMAIL_USER</code> = votre-email@outlook.com</li>
-              <li><code>EMAIL_PASSWORD</code> = votre-mot-de-passe</li>
-              <li><code>BACKUP_EMAIL_TO</code> = email-destination@example.com</li>
-            </ul>
-          </li>
-        </ol>
-      </div>
-
-      <div style="background: #e7f3ff; padding: 15px; border-left: 4px solid #17a2b8; border-radius: 4px; margin-bottom: 20px;">
-        <strong>ℹ️ Configuration Outlook :</strong>
-        <ul style="margin: 10px 0 0 20px; color: #666;">
-          <li><strong>Avec 2FA activée (recommandé) :</strong>
-            <ol style="margin-top: 5px;">
-              <li>Allez sur <a href="https://account.microsoft.com/security" target="_blank">account.microsoft.com/security</a></li>
-              <li>Options de sécurité avancées → Mots de passe d'application</li>
-              <li>Créer un nouveau mot de passe pour "Email"</li>
-              <li>Utilisez ce mot de passe dans EMAIL_PASSWORD</li>
-            </ol>
-          </li>
-          <li style="margin-top: 10px;"><strong>Sans 2FA :</strong> Utilisez votre mot de passe Outlook habituel</li>
-          <li style="margin-top: 10px;">Fonctionne aussi avec Hotmail (@hotmail.com)</li>
-        </ul>
-      </div>
-
-      <button onclick="testEmailBackup()" class="btn" style="background: #17a2b8;">
-        📧 Tester l'Envoi d'Email
-      </button>
-
-      <div style="margin-top: 15px; padding: 15px; background: #d4edda; border-left: 4px solid #28a745; border-radius: 4px;">
-        <strong>✅ Une fois configuré :</strong>
-        <ul style="margin: 10px 0 0 20px; color: #666;">
-          <li>Sauvegardes automatiques tous les dimanches à 00:00 (heure de Paris)</li>
-          <li>Fichier Excel complet envoyé par email</li>
-          <li>Aucune action manuelle requise</li>
-          <li>Vérifiez vos spams la première fois</li>
-        </ul>
-      </div>
-    </div>
   </div>
 
   <script>
@@ -137,6 +91,44 @@
     if (!token) {
       window.location.href = 'login.html';
     }
+
+    // Load and display last export info
+    function displayLastExport() {
+      const lastExport = localStorage.getItem('lastExport');
+      if (lastExport) {
+        try {
+          const exportData = JSON.parse(lastExport);
+          const date = new Date(exportData.timestamp);
+          const formattedDate = date.toLocaleDateString('fr-FR', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+          });
+          const formattedTime = date.toLocaleTimeString('fr-FR', {
+            hour: '2-digit',
+            minute: '2-digit'
+          });
+
+          const typeLabels = {
+            'players': 'Joueurs',
+            'tournaments': 'Tournois',
+            'rankings': 'Classements',
+            'all': 'Sauvegarde Complète'
+          };
+
+          document.getElementById('lastExportDetails').innerHTML = `
+            <strong>${typeLabels[exportData.type]}</strong><br>
+            ${formattedDate} à ${formattedTime}
+          `;
+          document.getElementById('lastExportInfo').style.display = 'block';
+        } catch (e) {
+          console.error('Error parsing last export data:', e);
+        }
+      }
+    }
+
+    // Display on page load
+    displayLastExport();
 
     // Logout
     document.getElementById('logoutBtn').addEventListener('click', (e) => {
@@ -274,45 +266,19 @@
         // Show success message
         document.getElementById('successMessage').textContent = `Export ${labels[type]} réussi ! Le fichier a été téléchargé.`;
 
+        // Save last export info
+        localStorage.setItem('lastExport', JSON.stringify({
+          type: type,
+          timestamp: new Date().toISOString()
+        }));
+
+        // Update display
+        displayLastExport();
+
       } catch (error) {
         console.error('Error exporting data:', error);
         document.getElementById('successMessage').style.display = 'none';
         document.getElementById('errorMessage').textContent = error.message;
-        document.getElementById('errorMessage').style.display = 'block';
-      }
-    }
-
-    // Test email backup
-    async function testEmailBackup() {
-      try {
-        // Hide previous messages
-        document.getElementById('errorMessage').style.display = 'none';
-        document.getElementById('successMessage').style.display = 'none';
-
-        // Show loading message
-        document.getElementById('successMessage').textContent = 'Envoi du test email en cours...';
-        document.getElementById('successMessage').style.display = 'block';
-
-        const response = await fetch(`${API_URL}/backup/test-email`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
-
-        const data = await response.json();
-
-        if (!response.ok) {
-          throw new Error(data.error || 'Erreur lors de l\'envoi du test email');
-        }
-
-        // Show success message
-        document.getElementById('successMessage').textContent = '✅ Email de test envoyé ! Vérifiez votre boîte de réception (et les spams).';
-
-      } catch (error) {
-        console.error('Error testing email backup:', error);
-        document.getElementById('successMessage').style.display = 'none';
-        document.getElementById('errorMessage').textContent = error.message || 'Erreur - Vérifiez que les variables d\'environnement email sont configurées sur Railway';
         document.getElementById('errorMessage').style.display = 'block';
       }
     }
