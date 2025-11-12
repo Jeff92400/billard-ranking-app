@@ -69,6 +69,7 @@ async function initializeDatabase() {
         tournament_number INTEGER NOT NULL,
         season TEXT NOT NULL,
         import_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        tournament_date TIMESTAMP,
         UNIQUE(category_id, tournament_number, season)
       )
     `);
@@ -83,6 +84,8 @@ async function initializeDatabase() {
         match_points INTEGER DEFAULT 0,
         moyenne REAL DEFAULT 0,
         serie INTEGER DEFAULT 0,
+        points INTEGER DEFAULT 0,
+        reprises INTEGER DEFAULT 0,
         UNIQUE(tournament_id, licence)
       )
     `);
