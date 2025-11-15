@@ -32,16 +32,18 @@ router.get('/', authenticateToken, (req, res) => {
       c.level,
       c.display_name,
       clubs.logo_filename as club_logo,
-      COALESCE((SELECT SUM(tr.match_points) FROM tournament_results tr
+      COALESCE((SELECT SUM(tr.points) FROM tournament_results tr
                 JOIN tournaments t ON tr.tournament_id = t.id
                 WHERE REPLACE(tr.licence, ' ', '') = REPLACE(r.licence, ' ', '')
                 AND t.category_id = r.category_id
-                AND t.season = r.season), 0) as cumulated_points,
-      COALESCE((SELECT COUNT(tr.id) FROM tournament_results tr
+                AND t.season = r.season
+                AND t.tournament_number <= 3), 0) as cumulated_points,
+      COALESCE((SELECT SUM(tr.reprises) FROM tournament_results tr
                 JOIN tournaments t ON tr.tournament_id = t.id
                 WHERE REPLACE(tr.licence, ' ', '') = REPLACE(r.licence, ' ', '')
                 AND t.category_id = r.category_id
-                AND t.season = r.season), 0) as cumulated_reprises
+                AND t.season = r.season
+                AND t.tournament_number <= 3), 0) as cumulated_reprises
     FROM rankings r
     JOIN players p ON REPLACE(r.licence, ' ', '') = REPLACE(p.licence, ' ', '')
     JOIN categories c ON r.category_id = c.id
@@ -93,16 +95,18 @@ router.get('/export', authenticateToken, async (req, res) => {
       c.level,
       c.display_name,
       clubs.logo_filename as club_logo,
-      COALESCE((SELECT SUM(tr.match_points) FROM tournament_results tr
+      COALESCE((SELECT SUM(tr.points) FROM tournament_results tr
                 JOIN tournaments t ON tr.tournament_id = t.id
                 WHERE REPLACE(tr.licence, ' ', '') = REPLACE(r.licence, ' ', '')
                 AND t.category_id = r.category_id
-                AND t.season = r.season), 0) as cumulated_points,
-      COALESCE((SELECT COUNT(tr.id) FROM tournament_results tr
+                AND t.season = r.season
+                AND t.tournament_number <= 3), 0) as cumulated_points,
+      COALESCE((SELECT SUM(tr.reprises) FROM tournament_results tr
                 JOIN tournaments t ON tr.tournament_id = t.id
                 WHERE REPLACE(tr.licence, ' ', '') = REPLACE(r.licence, ' ', '')
                 AND t.category_id = r.category_id
-                AND t.season = r.season), 0) as cumulated_reprises
+                AND t.season = r.season
+                AND t.tournament_number <= 3), 0) as cumulated_reprises
     FROM rankings r
     JOIN players p ON REPLACE(r.licence, ' ', '') = REPLACE(p.licence, ' ', '')
     JOIN categories c ON r.category_id = c.id
