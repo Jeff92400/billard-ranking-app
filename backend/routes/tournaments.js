@@ -277,7 +277,8 @@ router.get('/', authenticateToken, (req, res) => {
       t.id,
       t.tournament_number,
       t.season,
-      t.import_date as tournament_date,
+      t.tournament_date,
+      t.import_date,
       c.id as category_id,
       c.game_type,
       c.level,
@@ -294,7 +295,7 @@ router.get('/', authenticateToken, (req, res) => {
     params.push(season);
   }
 
-  query += ' GROUP BY t.id, t.tournament_number, t.season, t.import_date, c.id, c.game_type, c.level, c.display_name ORDER BY t.season DESC, c.game_type, c.level, t.tournament_number';
+  query += ' GROUP BY t.id, t.tournament_number, t.season, t.tournament_date, t.import_date, c.id, c.game_type, c.level, c.display_name ORDER BY t.import_date DESC';
 
   db.all(query, params, (err, rows) => {
     if (err) {
