@@ -240,6 +240,45 @@ const db = {
   // For prepared statements (serialize operations)
   serialize: (callback) => {
     callback();
+  },
+
+  // For prepared statements
+  prepare: (query) => {
+    // Convert SQLite ? placeholders to PostgreSQL $1, $2, etc.
+    let paramIndex = 1;
+    const pgQuery = query.replace(/\?/g, () => `$${paramIndex++}`);
+
+    const statement = {
+      run: (...args) => {
+        const callback = typeof args[args.length - 1] === 'function' ? args.pop() : null;
+        const params = args;
+
+        pool.query(pgQuery, params)
+          .then(result => {
+            if (callback) {
+              // Call callback with 'this' context containing lastID and changes
+              const context = {
+                lastID: result.rows[0]?.id,
+                changes: result.rowCount
+              };
+              callback.call(context, null);
+            }
+          })
+          .catch(err => {
+            if (callback) callback(err);
+          });
+      },
+
+      finalize: (callback) => {
+        // In PostgreSQL, there's nothing to finalize for a prepared statement
+        // Just call the callback immediately
+        if (callback) {
+          setImmediate(callback);
+        }
+      }
+    };
+
+    return statement;
   }
 };
 
