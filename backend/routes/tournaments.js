@@ -208,7 +208,6 @@ function recalculateRankings(categoryId, season, callback) {
     SELECT
       tr.licence,
       tr.player_name,
-      t.tournament_number,
       SUM(tr.match_points) as total_match_points,
       AVG(tr.moyenne) as avg_moyenne,
       MAX(tr.serie) as best_serie,
