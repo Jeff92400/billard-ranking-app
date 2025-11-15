@@ -114,6 +114,13 @@
           }
         });
 
+        // Check for authentication errors
+        if (allPlayersResponse.status === 401 || allPlayersResponse.status === 403) {
+          localStorage.removeItem('token');
+          window.location.href = 'login.html';
+          return;
+        }
+
         if (allPlayersResponse.ok) {
           const allPlayers = await allPlayersResponse.json();
           const activePlayers = allPlayers.filter(p => p.is_active === 1);
@@ -127,6 +134,13 @@
             'Authorization': `Bearer ${token}`
           }
         });
+
+        // Check for authentication errors
+        if (tournamentsResponse.status === 401 || tournamentsResponse.status === 403) {
+          localStorage.removeItem('token');
+          window.location.href = 'login.html';
+          return;
+        }
 
         if (tournamentsResponse.ok) {
           const tournaments = await tournamentsResponse.json();
