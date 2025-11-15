@@ -243,6 +243,14 @@ function recalculateRankings(categoryId, season, callback) {
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `);
 
+      let insertCount = 0;
+      let insertError = null;
+
+      if (results.length === 0) {
+        stmt.finalize(() => callback(null));
+        return;
+      }
+
       results.forEach((result, index) => {
         stmt.run(
           categoryId,
@@ -254,15 +262,22 @@ function recalculateRankings(categoryId, season, callback) {
           index + 1,
           result.t1_points,
           result.t2_points,
-          result.t3_points
-        );
-      });
+          result.t3_points,
+          (err) => {
+            if (err && !insertError) {
+              insertError = err;
+              console.error('Error inserting ranking:', err);
+            }
+            insertCount++;
 
-      stmt.finalize((err) => {
-        if (err) {
-          console.error('Error inserting rankings:', err);
-        }
-        callback(err);
+            // After all inserts are done, finalize
+            if (insertCount === results.length) {
+              stmt.finalize((finalizeErr) => {
+                callback(insertError || finalizeErr);
+              });
+            }
+          }
+        );
       });
     });
   });
