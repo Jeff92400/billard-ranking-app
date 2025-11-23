@@ -206,7 +206,7 @@ function recalculateRankings(categoryId, season, callback) {
   // Exclude finale (tournament_number = 4) from ranking calculation
   const query = `
     SELECT
-      tr.licence,
+      REPLACE(tr.licence, ' ', '') as licence,
       tr.player_name,
       SUM(tr.match_points) as total_match_points,
       AVG(tr.moyenne) as avg_moyenne,
@@ -217,7 +217,7 @@ function recalculateRankings(categoryId, season, callback) {
     FROM tournament_results tr
     JOIN tournaments t ON tr.tournament_id = t.id
     WHERE t.category_id = ? AND t.season = ? AND t.tournament_number <= 3
-    GROUP BY tr.licence, tr.player_name
+    GROUP BY REPLACE(tr.licence, ' ', ''), tr.player_name
     ORDER BY total_match_points DESC, avg_moyenne DESC, best_serie DESC
   `;
 
