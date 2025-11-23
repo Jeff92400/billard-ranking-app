@@ -213,6 +213,69 @@ router.get('/:licence', authenticateToken, (req, res) => {
 });
 
 // Update player club name
+// Update player (all fields)
+router.put('/:licence', authenticateToken, (req, res) => {
+  const { licence } = req.params;
+  const { club, first_name, last_name, rank_libre, rank_cadre, rank_bande, rank_3bandes, is_active } = req.body;
+
+  // Build dynamic UPDATE query based on provided fields
+  const updates = [];
+  const values = [];
+
+  if (club !== undefined) {
+    updates.push('club = ?');
+    values.push(club);
+  }
+  if (first_name !== undefined) {
+    updates.push('first_name = ?');
+    values.push(first_name);
+  }
+  if (last_name !== undefined) {
+    updates.push('last_name = ?');
+    values.push(last_name);
+  }
+  if (rank_libre !== undefined) {
+    updates.push('rank_libre = ?');
+    values.push(rank_libre || null);
+  }
+  if (rank_cadre !== undefined) {
+    updates.push('rank_cadre = ?');
+    values.push(rank_cadre || null);
+  }
+  if (rank_bande !== undefined) {
+    updates.push('rank_bande = ?');
+    values.push(rank_bande || null);
+  }
+  if (rank_3bandes !== undefined) {
+    updates.push('rank_3bandes = ?');
+    values.push(rank_3bandes || null);
+  }
+  if (is_active !== undefined) {
+    updates.push('is_active = ?');
+    values.push(is_active ? 1 : 0);
+  }
+
+  if (updates.length === 0) {
+    return res.status(400).json({ error: 'No fields to update' });
+  }
+
+  values.push(licence);
+
+  const query = `UPDATE players SET ${updates.join(', ')} WHERE REPLACE(licence, ' ', '') = REPLACE(?, ' ', '')`;
+
+  db.run(query, values, function(err) {
+    if (err) {
+      console.error('Update player error:', err);
+      return res.status(500).json({ error: err.message });
+    }
+    if (this.changes === 0) {
+      return res.status(404).json({ error: 'Player not found' });
+    }
+    res.json({ success: true, message: 'Player updated successfully' });
+  });
+});
+
+// Legacy endpoint - update club only (for backwards compatibility)
 router.put('/:licence/club', authenticateToken, (req, res) => {
   const { licence } = req.params;
   const { club } = req.body;
@@ -221,19 +284,18 @@ router.put('/:licence/club', authenticateToken, (req, res) => {
     return res.status(400).json({ error: 'Club name is required' });
   }
 
-  db.run(
-    'UPDATE players SET club = ? WHERE REPLACE(licence, " ", "") = REPLACE(?, " ", "")',
-    [club, licence],
-    function(err) {
-      if (err) {
-        return res.status(500).json({ error: err.message });
-      }
-      if (this.changes === 0) {
-        return res.status(404).json({ error: 'Player not found' });
-      }
-      res.json({ success: true, club });
+  const query = 'UPDATE players SET club = ? WHERE REPLACE(licence, \' \', \'\') = REPLACE(?, \' \', \'\')';
+
+  db.run(query, [club, licence], function(err) {
+    if (err) {
+      console.error('Update club error:', err);
+      return res.status(500).json({ error: err.message });
     }
-  );
+    if (this.changes === 0) {
+      return res.status(404).json({ error: 'Player not found' });
+    }
+    res.json({ success: true, club });
+  });
 });
 
 // Delete all players (admin only - requires password confirmation)
