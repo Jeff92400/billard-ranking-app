@@ -139,16 +139,18 @@ router.post('/import', authenticateToken, upload.single('file'), async (req, res
 
                     const licence = record[1]?.replace(/"/g, '').replace(/ /g, '').trim(); // Remove spaces
                     const playerName = record[2]?.replace(/"/g, '').trim();
-                    const club = record[3]?.replace(/"/g, '').trim() || 'N/A';
 
                     if (!licence || !playerName) continue;
 
                     // Split player name into first and last name
+                    // Tournament CSV format: "LASTNAME FIRSTNAME"
                     const nameParts = playerName.split(' ');
                     const lastName = nameParts[0] || '';
                     const firstName = nameParts.slice(1).join(' ') || '';
 
-                    playerStmt.run(licence, firstName, lastName, club, (err) => {
+                    // Note: Tournament CSV doesn't include club info
+                    // Club will be set when importing JOUEURS.csv separately
+                    playerStmt.run(licence, firstName, lastName, 'Club inconnu', (err) => {
                       // Ignore errors - player might already exist
                     });
                   } catch (err) {
