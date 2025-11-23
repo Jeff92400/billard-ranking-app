@@ -114,6 +114,13 @@
           }
         });
 
+        // Check for authentication errors
+        if (allPlayersResponse.status === 401 || allPlayersResponse.status === 403) {
+          localStorage.removeItem('token');
+          window.location.href = 'login.html';
+          return;
+        }
+
         if (allPlayersResponse.ok) {
           const allPlayers = await allPlayersResponse.json();
           const activePlayers = allPlayers.filter(p => p.is_active === 1);
@@ -128,20 +135,34 @@
           }
         });
 
+        // Check for authentication errors
+        if (tournamentsResponse.status === 401 || tournamentsResponse.status === 403) {
+          localStorage.removeItem('token');
+          window.location.href = 'login.html';
+          return;
+        }
+
         if (tournamentsResponse.ok) {
           const tournaments = await tournamentsResponse.json();
           document.getElementById('tournamentCount').textContent = tournaments.length;
 
-          // Display recent tournaments (last 10)
-          const recentTournaments = tournaments.slice(0, 10);
+          // Sort tournaments by import date (newest first)
+          tournaments.sort((a, b) => {
+            const dateA = new Date(a.tournament_date || a.import_date);
+            const dateB = new Date(b.tournament_date || b.import_date);
+            return dateB - dateA; // Descending order (newest first)
+          });
+
+          // Get the 5 most recent tournaments
+          const recentTournaments = tournaments.slice(0, 5);
           const tbody = document.getElementById('tournamentsBody');
           tbody.innerHTML = '';
 
           if (recentTournaments.length === 0) {
             tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 20px;">Aucun tournoi importé</td></tr>';
           } else {
-            // Limit to last 5 tournaments
-            recentTournaments.slice(0, 5).forEach(tournament => {
+            // Display the 5 most recent tournaments
+            recentTournaments.forEach(tournament => {
               const row = document.createElement('tr');
               const tournamentLabel = tournament.tournament_number === 4 ? 'Finale Départementale' : `Tournoi ${tournament.tournament_number}`;
               row.innerHTML = `
