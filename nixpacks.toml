@@ -5,7 +5,7 @@ nixPkgs = ["nodejs-18_x"]
 cmds = ["cd backend && npm install"]
 
 [phases.build]
-cmds = ["echo 'Build complete'"]
+cmds = ["cp -r frontend backend/frontend"]
 
 [start]
 cmd = "cd backend && node server.js"
