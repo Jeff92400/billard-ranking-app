@@ -132,6 +132,10 @@ router.post('/import', authenticateToken, upload.single('file'), async (req, res
                 `);
 
                 // Parse and create players first
+                let playerInsertCount = 0;
+                let playerInsertTotal = 0;
+                let playerInsertError = null;
+
                 for (const record of records) {
                   try {
                     // Skip header row
@@ -148,20 +152,41 @@ router.post('/import', authenticateToken, upload.single('file'), async (req, res
                     const lastName = nameParts[0] || '';
                     const firstName = nameParts.slice(1).join(' ') || '';
 
+                    playerInsertTotal++;
+
                     // Note: Tournament CSV doesn't include club info
                     // Club will be set when importing JOUEURS.csv separately
                     playerStmt.run(licence, firstName, lastName, 'Club inconnu', (err) => {
-                      // Ignore errors - player might already exist
+                      if (err && !playerInsertError) {
+                        playerInsertError = err;
+                        console.error('Error creating player:', err);
+                      }
+                      playerInsertCount++;
+
+                      // Check if all player inserts are done
+                      if (playerInsertCount === playerInsertTotal) {
+                        // All players created, now finalize and insert tournament results
+                        playerStmt.finalize((finalizeErr) => {
+                          if (finalizeErr) {
+                            console.error('Error finalizing player statement:', finalizeErr);
+                          }
+                          insertTournamentResults();
+                        });
+                      }
                     });
                   } catch (err) {
-                    // Ignore player creation errors
+                    console.error('Error parsing player record:', err);
                   }
                 }
 
-                playerStmt.finalize((err) => {
-                  if (err) {
-                    console.error('Error creating players:', err);
-                  }
+                // If no players to insert, skip directly to tournament results
+                if (playerInsertTotal === 0) {
+                  playerStmt.finalize(() => {
+                    insertTournamentResults();
+                  });
+                }
+
+                function insertTournamentResults() {
 
                   // Now insert tournament results
                   const stmt = db.prepare(`
@@ -224,7 +249,7 @@ router.post('/import', authenticateToken, upload.single('file'), async (req, res
                       });
                     });
                   });
-                }); // Close playerStmt.finalize
+                } // Close insertTournamentResults function
               });
             }
           );
