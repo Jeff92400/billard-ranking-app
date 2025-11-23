@@ -75,6 +75,19 @@
       <h3>Résultats de l'import</h3>
       <div id="importResults"></div>
     </div>
+
+    <!-- Modal for unknown players -->
+    <div id="unknownPlayersModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
+      <div style="background: white; padding: 30px; border-radius: 12px; max-width: 600px; max-height: 80vh; overflow-y: auto; box-shadow: 0 4px 20px rgba(0,0,0,0.3);">
+        <h3 style="margin-top: 0;">⚠️ Joueurs inconnus détectés</h3>
+        <p style="color: #666; margin-bottom: 20px;">Les joueurs suivants n'existent pas dans la base de données. Veuillez sélectionner leur club pour les créer.</p>
+        <div id="unknownPlayersList"></div>
+        <div style="display: flex; gap: 10px; margin-top: 20px;">
+          <button id="createPlayersBtn" class="btn" style="flex: 1;">Créer les joueurs et continuer</button>
+          <button id="cancelBtn" class="btn" style="flex: 1; background: #999;">Annuler</button>
+        </div>
+      </div>
+    </div>
   </div>
 
   <script>
@@ -179,37 +192,104 @@
       }
     });
 
-    // Form submission
-    document.getElementById('importForm').addEventListener('submit', async (e) => {
-      e.preventDefault();
+    // Global variables for import
+    let clubs = [];
+    let unknownPlayers = [];
+    let currentFormData = null;
 
+    // Load clubs for dropdown
+    async function loadClubs() {
+      try {
+        const response = await fetch(`${API_URL}/clubs`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (response.ok) {
+          clubs = await response.json();
+        }
+      } catch (error) {
+        console.error('Error loading clubs:', error);
+      }
+    }
+
+    // Show unknown players modal
+    function showUnknownPlayersModal(players) {
+      unknownPlayers = players;
+      const modal = document.getElementById('unknownPlayersModal');
+      const list = document.getElementById('unknownPlayersList');
+
+      list.innerHTML = players.map((player, index) => `
+        <div style="margin-bottom: 20px; padding: 15px; background: #f9f9f9; border-radius: 8px;">
+          <div style="font-weight: bold; margin-bottom: 8px;">
+            ${player.fullName} (${player.licence})
+          </div>
+          <label style="display: block; margin-bottom: 5px; font-size: 14px; color: #666;">Club *</label>
+          <select id="club_${index}" required style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+            <option value="">-- Sélectionner un club --</option>
+            ${clubs.map(club => `<option value="${club.name}">${club.display_name}</option>`).join('')}
+          </select>
+        </div>
+      `).join('');
+
+      modal.style.display = 'flex';
+    }
+
+    // Hide modal
+    function hideModal() {
+      document.getElementById('unknownPlayersModal').style.display = 'none';
+    }
+
+    // Create players and continue import
+    document.getElementById('createPlayersBtn').addEventListener('click', async () => {
+      const playersToCreate = unknownPlayers.map((player, index) => {
+        const clubSelect = document.getElementById(`club_${index}`);
+        if (!clubSelect.value) {
+          throw new Error(`Veuillez sélectionner un club pour ${player.fullName}`);
+        }
+        return {
+          licence: player.licence,
+          firstName: player.firstName,
+          lastName: player.lastName,
+          club: clubSelect.value
+        };
+      });
+
+      try {
+        // Create players
+        const createResponse = await fetch(`${API_URL}/tournaments/create-players`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ players: playersToCreate })
+        });
+
+        if (!createResponse.ok) {
+          throw new Error('Erreur lors de la création des joueurs');
+        }
+
+        hideModal();
+
+        // Now proceed with the actual import
+        await performImport(currentFormData);
+
+      } catch (error) {
+        alert(error.message || 'Erreur lors de la création des joueurs');
+      }
+    });
+
+    // Cancel button
+    document.getElementById('cancelBtn').addEventListener('click', () => {
+      hideModal();
+      document.getElementById('importBtn').disabled = false;
+      document.getElementById('importBtn').textContent = 'Importer le tournoi';
+    });
+
+    // Perform the actual import
+    async function performImport(formData) {
       const errorDiv = document.getElementById('errorMessage');
       const successDiv = document.getElementById('successMessage');
       const importBtn = document.getElementById('importBtn');
-
-      errorDiv.style.display = 'none';
-      successDiv.style.display = 'none';
-
-      const categoryId = document.getElementById('categorySelect').value;
-      const tournamentNumber = document.getElementById('tournamentNumber').value;
-      const tournamentDate = document.getElementById('tournamentDate').value;
-      const season = document.getElementById('season').value;
-
-      if (!categoryId || !tournamentNumber || !tournamentDate || !season || !fileInput.files[0]) {
-        errorDiv.textContent = 'Veuillez remplir tous les champs';
-        errorDiv.style.display = 'block';
-        return;
-      }
-
-      const formData = new FormData();
-      formData.append('file', fileInput.files[0]);
-      formData.append('categoryId', categoryId);
-      formData.append('tournamentNumber', tournamentNumber);
-      formData.append('tournamentDate', tournamentDate);
-      formData.append('season', season);
-
-      importBtn.disabled = true;
-      importBtn.textContent = 'Import en cours...';
 
       try {
         const response = await fetch(`${API_URL}/tournaments/import`, {
@@ -270,10 +350,79 @@
         importBtn.disabled = false;
         importBtn.textContent = 'Importer le tournoi';
       }
+    }
+
+    // Form submission - validate first, then import
+    document.getElementById('importForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const errorDiv = document.getElementById('errorMessage');
+      const successDiv = document.getElementById('successMessage');
+      const importBtn = document.getElementById('importBtn');
+
+      errorDiv.style.display = 'none';
+      successDiv.style.display = 'none';
+
+      const categoryId = document.getElementById('categorySelect').value;
+      const tournamentNumber = document.getElementById('tournamentNumber').value;
+      const tournamentDate = document.getElementById('tournamentDate').value;
+      const season = document.getElementById('season').value;
+
+      if (!categoryId || !tournamentNumber || !tournamentDate || !season || !fileInput.files[0]) {
+        errorDiv.textContent = 'Veuillez remplir tous les champs';
+        errorDiv.style.display = 'block';
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append('file', fileInput.files[0]);
+      formData.append('categoryId', categoryId);
+      formData.append('tournamentNumber', tournamentNumber);
+      formData.append('tournamentDate', tournamentDate);
+      formData.append('season', season);
+
+      currentFormData = formData;
+
+      importBtn.disabled = true;
+      importBtn.textContent = 'Validation en cours...';
+
+      try {
+        // First validate and check for unknown players
+        const validateResponse = await fetch(`${API_URL}/tournaments/validate`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          },
+          body: formData
+        });
+
+        const validateData = await validateResponse.json();
+
+        if (!validateResponse.ok) {
+          throw new Error(validateData.error || 'Erreur lors de la validation');
+        }
+
+        if (validateData.status === 'validation_required' && validateData.unknownPlayers.length > 0) {
+          // Show modal for unknown players
+          importBtn.textContent = 'En attente de création des joueurs...';
+          showUnknownPlayersModal(validateData.unknownPlayers);
+        } else {
+          // All players exist, proceed with import
+          importBtn.textContent = 'Import en cours...';
+          await performImport(formData);
+        }
+
+      } catch (error) {
+        errorDiv.textContent = error.message || 'Erreur de connexion au serveur';
+        errorDiv.style.display = 'block';
+        importBtn.disabled = false;
+        importBtn.textContent = 'Importer le tournoi';
+      }
     });
 
     // Initialize
     loadCategories();
+    loadClubs();
 
     // Set today's date as default value
     const today = new Date().toISOString().split('T')[0];

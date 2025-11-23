@@ -33,6 +33,164 @@ router.get('/categories', authenticateToken, (req, res) => {
   });
 });
 
+// Validate tournament CSV and check for unknown players
+router.post('/validate', authenticateToken, upload.single('file'), async (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ error: 'No file uploaded' });
+  }
+
+  try {
+    let fileContent = fs.readFileSync(req.file.path, 'utf-8');
+
+    // Fix CSV format
+    const lines = fileContent.split('\n');
+    const fixedLines = lines.map(line => {
+      line = line.trim();
+      if (!line) return line;
+      if (line.startsWith('"') && line.endsWith('"')) {
+        line = line.slice(1, -1);
+      }
+      line = line.replace(/""/g, '"');
+      return line;
+    });
+
+    fileContent = fixedLines.join('\n');
+    const records = [];
+
+    const parser = parse(fileContent, {
+      delimiter: ';',
+      skip_empty_lines: true,
+      quote: '"',
+      escape: '"',
+      relax_column_count: true
+    });
+
+    for await (const record of parser) {
+      records.push(record);
+    }
+
+    // Check for unknown players
+    const unknownPlayers = [];
+    const checkedLicences = new Set();
+
+    for (const record of records) {
+      try {
+        if (record[0]?.includes('Classt') || record[0]?.includes('Licence')) continue;
+
+        const licence = record[1]?.replace(/"/g, '').replace(/ /g, '').trim();
+        const playerName = record[2]?.replace(/"/g, '').trim();
+
+        if (!licence || !playerName) continue;
+        if (checkedLicences.has(licence)) continue;
+
+        checkedLicences.add(licence);
+
+        // Check if player exists by licence OR name
+        const existsQuery = `
+          SELECT licence, first_name, last_name
+          FROM players
+          WHERE REPLACE(licence, ' ', '') = ?
+             OR (UPPER(first_name || ' ' || last_name) = UPPER(?)
+                 OR UPPER(last_name || ' ' || first_name) = UPPER(?))
+        `;
+
+        await new Promise((resolve) => {
+          db.get(existsQuery, [licence, playerName, playerName], (err, player) => {
+            if (err) {
+              console.error('Error checking player:', err);
+              resolve();
+              return;
+            }
+
+            if (!player) {
+              // Player doesn't exist
+              const nameParts = playerName.split(' ');
+              const lastName = nameParts[0] || '';
+              const firstName = nameParts.slice(1).join(' ') || '';
+
+              unknownPlayers.push({
+                licence,
+                firstName,
+                lastName,
+                fullName: playerName
+              });
+            }
+            resolve();
+          });
+        });
+      } catch (err) {
+        console.error('Error parsing record:', err);
+      }
+    }
+
+    // Clean up uploaded file
+    fs.unlinkSync(req.file.path);
+
+    if (unknownPlayers.length > 0) {
+      return res.json({
+        status: 'validation_required',
+        unknownPlayers
+      });
+    } else {
+      return res.json({
+        status: 'ready',
+        message: 'All players exist, ready to import'
+      });
+    }
+
+  } catch (error) {
+    if (req.file && fs.existsSync(req.file.path)) {
+      fs.unlinkSync(req.file.path);
+    }
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Batch create players
+router.post('/create-players', authenticateToken, async (req, res) => {
+  const { players } = req.body;
+
+  if (!players || !Array.isArray(players)) {
+    return res.status(400).json({ error: 'Players array required' });
+  }
+
+  try {
+    const stmt = db.prepare(`
+      INSERT INTO players (licence, first_name, last_name, club, is_active)
+      VALUES (?, ?, ?, ?, 1)
+      ON CONFLICT (licence) DO UPDATE SET
+        club = EXCLUDED.club
+    `);
+
+    let created = 0;
+    let createError = null;
+
+    for (const player of players) {
+      await new Promise((resolve) => {
+        stmt.run(player.licence, player.firstName, player.lastName, player.club, (err) => {
+          if (err && !createError) {
+            createError = err;
+            console.error('Error creating player:', err);
+          } else {
+            created++;
+          }
+          resolve();
+        });
+      });
+    }
+
+    stmt.finalize((err) => {
+      if (err || createError) {
+        return res.status(500).json({ error: 'Error creating players' });
+      }
+      res.json({ message: `${created} players created successfully` });
+    });
+
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Import tournament results from CSV
 router.post('/import', authenticateToken, upload.single('file'), async (req, res) => {
   if (!req.file) {
