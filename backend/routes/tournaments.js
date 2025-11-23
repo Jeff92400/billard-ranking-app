@@ -124,66 +124,105 @@ router.post('/import', authenticateToken, upload.single('file'), async (req, res
                 let imported = 0;
                 let errors = [];
 
-                const stmt = db.prepare(`
-                  INSERT INTO tournament_results (tournament_id, licence, player_name, match_points, moyenne, serie, points, reprises)
-                  VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                // First, ensure all players exist in the players table
+                const playerStmt = db.prepare(`
+                  INSERT INTO players (licence, first_name, last_name, club, is_active)
+                  VALUES (?, ?, ?, ?, 1)
+                  ON CONFLICT (licence) DO NOTHING
                 `);
 
+                // Parse and create players first
                 for (const record of records) {
                   try {
                     // Skip header row
                     if (record[0]?.includes('Classt') || record[0]?.includes('Licence')) continue;
 
-                    // Parse CSV format from the tournament results
-                    // Column B (index 1): Licence
-                    // Column C (index 2): Joueur
-                    // Column E (index 4): Pts match (match points)
-                    // Column G (index 6): Moyenne (3.10)
-                    // Column I (index 8): Reprises
-                    // Column J (index 9): Série
-                    // Column M (index 12): Points (R) - game points
-                    const licence = record[1]?.replace(/"/g, '').trim();
+                    const licence = record[1]?.replace(/"/g, '').replace(/ /g, '').trim(); // Remove spaces
                     const playerName = record[2]?.replace(/"/g, '').trim();
-                    const matchPoints = parseInt(record[4]?.replace(/"/g, '').trim()) || 0;
-                    const moyenneStr = record[6]?.replace(/"/g, '').replace(',', '.').trim();
-                    const moyenne = parseFloat(moyenneStr) || 0;
-                    const reprises = parseInt(record[8]?.replace(/"/g, '').trim()) || 0;
-                    const serie = parseInt(record[9]?.replace(/"/g, '').trim()) || 0;
-                    const points = parseInt(record[12]?.replace(/"/g, '').trim()) || 0;
+                    const club = record[3]?.replace(/"/g, '').trim() || 'N/A';
 
                     if (!licence || !playerName) continue;
 
-                    stmt.run(finalTournamentId, licence, playerName, matchPoints, moyenne, serie, points, reprises, (err) => {
-                      if (err) {
-                        errors.push({ licence, error: err.message });
-                      } else {
-                        imported++;
-                      }
+                    // Split player name into first and last name
+                    const nameParts = playerName.split(' ');
+                    const lastName = nameParts[0] || '';
+                    const firstName = nameParts.slice(1).join(' ') || '';
+
+                    playerStmt.run(licence, firstName, lastName, club, (err) => {
+                      // Ignore errors - player might already exist
                     });
                   } catch (err) {
-                    errors.push({ record: record[0], error: err.message });
+                    // Ignore player creation errors
                   }
                 }
 
-                stmt.finalize((err) => {
+                playerStmt.finalize((err) => {
                   if (err) {
-                    fs.unlinkSync(req.file.path);
-                    return res.status(500).json({ error: 'Error finalizing import' });
+                    console.error('Error creating players:', err);
                   }
 
-                  // Recalculate rankings for this category and season
-                  recalculateRankings(categoryId, season, () => {
-                    // Clean up uploaded file
-                    fs.unlinkSync(req.file.path);
+                  // Now insert tournament results
+                  const stmt = db.prepare(`
+                    INSERT INTO tournament_results (tournament_id, licence, player_name, match_points, moyenne, serie, points, reprises)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                  `);
 
-                    res.json({
-                      message: 'Tournament imported successfully',
-                      tournamentId: finalTournamentId,
-                      imported,
-                      errors: errors.length > 0 ? errors : undefined
+                  for (const record of records) {
+                    try {
+                      // Skip header row
+                      if (record[0]?.includes('Classt') || record[0]?.includes('Licence')) continue;
+
+                      // Parse CSV format from the tournament results
+                      // Column B (index 1): Licence
+                      // Column C (index 2): Joueur
+                      // Column E (index 4): Pts match (match points)
+                      // Column G (index 6): Moyenne (3.10)
+                      // Column I (index 8): Reprises
+                      // Column J (index 9): Série
+                      // Column M (index 12): Points (R) - game points
+                      const licence = record[1]?.replace(/"/g, '').replace(/ /g, '').trim(); // Remove spaces
+                      const playerName = record[2]?.replace(/"/g, '').trim();
+                      const matchPoints = parseInt(record[4]?.replace(/"/g, '').trim()) || 0;
+                      const moyenneStr = record[6]?.replace(/"/g, '').replace(',', '.').trim();
+                      const moyenne = parseFloat(moyenneStr) || 0;
+                      const reprises = parseInt(record[8]?.replace(/"/g, '').trim()) || 0;
+                      const serie = parseInt(record[9]?.replace(/"/g, '').trim()) || 0;
+                      const points = parseInt(record[12]?.replace(/"/g, '').trim()) || 0;
+
+                      if (!licence || !playerName) continue;
+
+                      stmt.run(finalTournamentId, licence, playerName, matchPoints, moyenne, serie, points, reprises, (err) => {
+                        if (err) {
+                          errors.push({ licence, error: err.message });
+                        } else {
+                          imported++;
+                        }
+                      });
+                    } catch (err) {
+                      errors.push({ record: record[0], error: err.message });
+                    }
+                  }
+
+                  stmt.finalize((err) => {
+                    if (err) {
+                      fs.unlinkSync(req.file.path);
+                      return res.status(500).json({ error: 'Error finalizing import' });
+                    }
+
+                    // Recalculate rankings for this category and season
+                    recalculateRankings(categoryId, season, () => {
+                      // Clean up uploaded file
+                      fs.unlinkSync(req.file.path);
+
+                      res.json({
+                        message: 'Tournament imported successfully',
+                        tournamentId: finalTournamentId,
+                        imported,
+                        errors: errors.length > 0 ? errors : undefined
+                      });
                     });
                   });
-                });
+                }); // Close playerStmt.finalize
               });
             }
           );
