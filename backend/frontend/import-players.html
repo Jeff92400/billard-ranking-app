@@ -14,11 +14,14 @@
       <div class="nav-links">
         <a href="dashboard.html">Accueil</a>
         <a href="players-list.html">Joueurs</a>
-        <a href="import-players.html">Import Joueurs</a>
-        <a href="import-tournament.html">Import Tournoi</a>
+        <a href="import-players.html" class="admin-only">Import Joueurs</a>
+        <a href="import-tournament.html" class="admin-only">Import Tournoi</a>
+        <a href="tournaments-list.html">Tournois</a>
         <a href="rankings.html">Classements</a>
         <a href="calendar.html">Calendrier</a>
-        <a href="#" id="logoutBtn">Déconnexion</a>
+        <a href="clubs.html">Clubs</a>
+        <a href="settings.html">Parametres</a>
+        <a href="#" id="logoutBtn">Deconnexion</a>
       </div>
     </div>
 
@@ -110,10 +113,19 @@
       window.location.href = 'login.html';
     }
 
+    // Check user role - this page is admin only
+    const userRole = localStorage.getItem('userRole');
+    if (userRole !== 'admin') {
+      alert('Accès réservé aux administrateurs');
+      window.location.href = 'dashboard.html';
+    }
+
     // Logout
     document.getElementById('logoutBtn').addEventListener('click', (e) => {
       e.preventDefault();
       localStorage.removeItem('token');
+      localStorage.removeItem('userRole');
+      localStorage.removeItem('username');
       window.location.href = 'login.html';
     });
 

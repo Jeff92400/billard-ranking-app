@@ -55,11 +55,14 @@
       <div class="nav-links">
         <a href="dashboard.html">Accueil</a>
         <a href="players-list.html">Joueurs</a>
-        <a href="import-players.html">Import Joueurs</a>
-        <a href="import-tournament.html">Import Tournoi</a>
+        <a href="import-players.html" class="admin-only">Import Joueurs</a>
+        <a href="import-tournament.html" class="admin-only">Import Tournoi</a>
+        <a href="tournaments-list.html">Tournois</a>
         <a href="rankings.html">Classements</a>
         <a href="calendar.html">Calendrier</a>
-        <a href="#" id="logoutBtn">Déconnexion</a>
+        <a href="clubs.html">Clubs</a>
+        <a href="settings.html">Parametres</a>
+        <a href="#" id="logoutBtn">Deconnexion</a>
       </div>
     </div>
 
@@ -80,9 +83,9 @@
       </div>
     </div>
 
-    <div style="margin-bottom: 20px; text-align: right;">
+    <div style="margin-bottom: 20px; text-align: right;" class="admin-only">
       <button id="clearPlayersBtn" class="btn" style="background-color: #dc3545; color: white;">
-        🗑️ Effacer tous les joueurs
+        Effacer tous les joueurs
       </button>
     </div>
 
@@ -187,10 +190,20 @@
       window.location.href = 'login.html';
     }
 
+    // Check user role and show/hide admin elements
+    const userRole = localStorage.getItem('userRole');
+    if (userRole === 'admin') {
+      document.querySelectorAll('.admin-only').forEach(el => el.style.display = '');
+    } else {
+      document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'none');
+    }
+
     // Logout
     document.getElementById('logoutBtn').addEventListener('click', (e) => {
       e.preventDefault();
       localStorage.removeItem('token');
+      localStorage.removeItem('userRole');
+      localStorage.removeItem('username');
       window.location.href = 'login.html';
     });
 
@@ -446,7 +459,7 @@
             </span>
           </td>
           <td style="text-align: center;">
-            <button class="btn btn-small edit-player-btn" style="background: #4CAF50; padding: 5px 10px; font-size: 12px;">✏️ Modifier</button>
+            ${userRole === 'admin' ? '<button class="btn btn-small edit-player-btn" style="background: #4CAF50; padding: 5px 10px; font-size: 12px;">Modifier</button>' : ''}
           </td>
         `;
 

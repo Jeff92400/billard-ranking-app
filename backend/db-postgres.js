@@ -25,12 +25,25 @@ async function initializeDatabase() {
   try {
     await client.query('BEGIN');
 
-    // Admin table
+    // Admin table (legacy - kept for backwards compatibility)
     await client.query(`
       CREATE TABLE IF NOT EXISTS admin (
         id SERIAL PRIMARY KEY,
         password_hash TEXT NOT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    // Users table with roles
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS users (
+        id SERIAL PRIMARY KEY,
+        username TEXT NOT NULL UNIQUE,
+        password_hash TEXT NOT NULL,
+        role TEXT NOT NULL DEFAULT 'viewer',
+        is_active INTEGER DEFAULT 1,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        last_login TIMESTAMP
       )
     `);
 
@@ -122,13 +135,26 @@ async function initializeDatabase() {
 
     await client.query('COMMIT');
 
-    // Initialize default admin
+    // Initialize default admin (legacy)
     const adminResult = await client.query('SELECT COUNT(*) as count FROM admin');
     if (adminResult.rows[0].count == 0) {
       const defaultPassword = 'admin123';
       const hash = await bcrypt.hash(defaultPassword, 10);
       await client.query('INSERT INTO admin (password_hash) VALUES ($1)', [hash]);
       console.log('Default admin password created: admin123');
+      console.log('Please change it after first login!');
+    }
+
+    // Initialize default admin user in users table
+    const usersResult = await client.query('SELECT COUNT(*) as count FROM users');
+    if (usersResult.rows[0].count == 0) {
+      const defaultPassword = 'admin123';
+      const hash = await bcrypt.hash(defaultPassword, 10);
+      await client.query(
+        'INSERT INTO users (username, password_hash, role) VALUES ($1, $2, $3)',
+        ['admin', hash, 'admin']
+      );
+      console.log('Default admin user created: username=admin, password=admin123');
       console.log('Please change it after first login!');
     }
 

@@ -14,14 +14,14 @@
       <div class="nav-links">
         <a href="dashboard.html">Accueil</a>
         <a href="players-list.html">Joueurs</a>
-        <a href="import-players.html">Import Joueurs</a>
-        <a href="import-tournament.html">Import Tournoi</a>
+        <a href="import-players.html" class="admin-only">Import Joueurs</a>
+        <a href="import-tournament.html" class="admin-only">Import Tournoi</a>
         <a href="tournaments-list.html">Tournois</a>
         <a href="rankings.html">Classements</a>
         <a href="calendar.html">Calendrier</a>
         <a href="clubs.html">Clubs</a>
-        <a href="settings.html">Paramètres</a>
-        <a href="#" id="logoutBtn">Déconnexion</a>
+        <a href="settings.html">Parametres</a>
+        <a href="#" id="logoutBtn">Deconnexion</a>
       </div>
     </div>
 
@@ -53,7 +53,7 @@
         <button class="btn" onclick="window.location.href='players-list.html'">
           Liste des Joueurs
         </button>
-        <button class="btn btn-success" onclick="window.location.href='import-tournament.html'">
+        <button class="btn btn-success admin-only" onclick="window.location.href='import-tournament.html'">
           Importer un Tournoi
         </button>
         <button class="btn" onclick="window.location.href='rankings.html'">
@@ -97,10 +97,20 @@
       window.location.href = 'login.html';
     }
 
+    // Check user role and show/hide admin elements
+    const userRole = localStorage.getItem('userRole');
+    if (userRole === 'admin') {
+      document.querySelectorAll('.admin-only').forEach(el => el.style.display = '');
+    } else {
+      document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'none');
+    }
+
     // Logout
     document.getElementById('logoutBtn').addEventListener('click', (e) => {
       e.preventDefault();
       localStorage.removeItem('token');
+      localStorage.removeItem('userRole');
+      localStorage.removeItem('username');
       window.location.href = 'login.html';
     });
 
@@ -165,6 +175,9 @@
             recentTournaments.forEach(tournament => {
               const row = document.createElement('tr');
               const tournamentLabel = tournament.tournament_number === 4 ? 'Finale Départementale' : `Tournoi ${tournament.tournament_number}`;
+              const deleteBtn = userRole === 'admin'
+                ? `<button class="btn-delete" data-tournament-id="${tournament.id}" data-tournament-name="${tournament.display_name} - T${tournament.tournament_number} - ${tournament.season}" title="Supprimer ce tournoi" style="background: #dc3545; color: white; border: none; padding: 6px 10px; cursor: pointer; border-radius: 4px; font-size: 16px;">🗑️</button>`
+                : '';
               row.innerHTML = `
                 <td class="tournament-cell">${tournament.display_name}</td>
                 <td class="tournament-cell">${tournamentLabel}</td>
@@ -172,8 +185,8 @@
                 <td class="tournament-cell">${tournament.player_count}</td>
                 <td class="tournament-cell">${tournament.tournament_date ? new Date(tournament.tournament_date).toLocaleDateString('fr-FR') : 'N/A'}</td>
                 <td style="text-align: center; padding: 8px;">
-                  <button class="btn-view" data-tournament-id="${tournament.id}" title="Voir les résultats" style="background: #28a745; color: white; border: none; padding: 6px 10px; cursor: pointer; border-radius: 4px; font-size: 14px; margin-right: 5px;">👁️ Voir</button>
-                  <button class="btn-delete" data-tournament-id="${tournament.id}" data-tournament-name="${tournament.display_name} - T${tournament.tournament_number} - ${tournament.season}" title="Supprimer ce tournoi" style="background: #dc3545; color: white; border: none; padding: 6px 10px; cursor: pointer; border-radius: 4px; font-size: 16px;">🗑️</button>
+                  <button class="btn-view" data-tournament-id="${tournament.id}" title="Voir les resultats" style="background: #28a745; color: white; border: none; padding: 6px 10px; cursor: pointer; border-radius: 4px; font-size: 14px; margin-right: 5px;">Voir</button>
+                  ${deleteBtn}
                 </td>
               `;
 
