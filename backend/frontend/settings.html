@@ -34,6 +34,7 @@
         <a href="players-list.html">Joueurs</a>
         <a href="import-players.html" class="admin-only">Import Joueurs</a>
         <a href="import-tournament.html" class="admin-only">Import Tournoi</a>
+        <a href="tournaments-list.html">Tournois</a>
         <a href="rankings.html">Classements</a>
         <a href="calendar.html">Calendrier</a>
         <a href="clubs.html">Clubs</a>
@@ -188,7 +189,14 @@
       roleEl.textContent = 'Administrateur';
       roleEl.className = 'role-badge role-admin';
       // Show admin-only elements
-      document.querySelectorAll('.admin-only').forEach(el => el.style.display = '');
+      document.querySelectorAll('.admin-only').forEach(el => {
+        // Use appropriate display type based on element
+        if (el.tagName === 'A') {
+          el.style.display = 'inline';
+        } else {
+          el.style.display = 'block';
+        }
+      });
       // Load users
       loadUsers();
     } else {
