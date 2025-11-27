@@ -208,15 +208,17 @@
                 window.location.href = `tournament-results.html?id=${tournament.id}`;
               };
 
-              // Handle delete button click
-              const deleteBtn = row.querySelector('.btn-delete');
-              deleteBtn.onclick = async (e) => {
-                e.stopPropagation();
-                const tournamentName = deleteBtn.getAttribute('data-tournament-name');
-                if (confirm(`Êtes-vous sûr de vouloir supprimer le tournoi "${tournamentName}" ?\n\nCette action supprimera tous les résultats et recalculera les classements.`)) {
-                  await deleteTournament(tournament.id);
-                }
-              };
+              // Handle delete button click (only for admin)
+              const deleteBtnEl = row.querySelector('.btn-delete');
+              if (deleteBtnEl) {
+                deleteBtnEl.onclick = async (e) => {
+                  e.stopPropagation();
+                  const tournamentName = deleteBtnEl.getAttribute('data-tournament-name');
+                  if (confirm(`Êtes-vous sûr de vouloir supprimer le tournoi "${tournamentName}" ?\n\nCette action supprimera tous les résultats et recalculera les classements.`)) {
+                    await deleteTournament(tournament.id);
+                  }
+                };
+              }
 
               tbody.appendChild(row);
             });
